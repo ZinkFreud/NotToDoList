@@ -63,6 +63,8 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.Font
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.BorderStroke
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -134,7 +136,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
         Column(
             modifier = Modifier
                 .fillMaxHeight()
-                .width(140.dp)
+                .width(100.dp)
                 .background(Color(0xFF2C2C2E))
         ) {
             for (day in days) {
@@ -186,6 +188,15 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     }
                 }
             },
+            onReset = { item ->
+                val index = items.indexOf(item)
+                if (index != -1) {
+                    items[index] = item.copy(createdAt = System.currentTimeMillis())
+                    scope.launch {
+                        DataStoreManager.saveItems(context, selectedDay, items.toList())
+                    }
+                }
+            },
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color(0xFFFAFAFA))
@@ -216,11 +227,13 @@ fun DayPage(
     onAdd: (String) -> Unit,
     onDelete: (NotToDoItem) -> Unit,
     onEdit: (NotToDoItem, String) -> Unit,
+    onReset: (NotToDoItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var newItem by remember { mutableStateOf("") }
     var editingItem by remember { mutableStateOf<NotToDoItem?>(null) }
     var editingText by remember { mutableStateOf("") }
+    var resetItem by remember { mutableStateOf<NotToDoItem?>(null) }
     val focusManager = LocalFocusManager.current
     LaunchedEffect(day) {
         newItem = ""
@@ -270,43 +283,60 @@ fun DayPage(
 
         Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
             for (item in items) {
-                Column(modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 8.dp)
+                Surface(
+                    shape = RoundedCornerShape(14.dp),
+                    color = Color.White,
+                    border = BorderStroke(1.dp, Color(0xFFE5E5EA)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp)
                 ) {
-                    // Üst satır: madde başlığı + ikonlar aynı hizada
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(
-                            text = "• ${item.text}",
-                            fontFamily = SpaceGrotesk, fontSize = 18.sp,
-                            color = Color(0xFF2C2C2E),
-                            modifier = Modifier.weight(1f)
-                        )
-                        IconButton(onClick = {
-                            editingItem = item
-                            editingText = item.text
-                        }) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Düzenle",
-                                tint = Color(0xFF2C2C2E)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = item.text,
+                                fontFamily = SpaceGrotesk,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Color(0xFF2C2C2E),
+                                modifier = Modifier.weight(1f)
                             )
+                            IconButton(onClick = {
+                                editingItem = item
+                                editingText = item.text
+                            }) {
+                                Icon(Icons.Default.Edit, "Düzenle", tint = Color(0xFF2C2C2E))
+                            }
+                            IconButton(onClick = { onDelete(item) }) {
+                                Icon(Icons.Default.Delete, "Sil", tint = Color(0xFF2C2C2E))
+                            }
                         }
-                        IconButton(onClick = { onDelete(item) }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Sil",
-                                tint = Color(0xFF8E8E93)
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = run { tik; sureMetni(item.createdAt) },
+                            fontFamily = SpaceGrotesk,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF2C2C2E)
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        OutlinedButton(
+                            onClick = { resetItem = item },
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, Color(0xFFE5E5EA))
+                        ) {
+                            Text(
+                                text = "Bozdum/Resetle",
+                                fontFamily = SpaceGrotesk,
+                                fontSize = 14.sp,
+                                color = Color(0xFF2C2C2E)
                             )
                         }
                     }
-                    // Alt satır: sayaç, tam genişlikte, ikonların altından uzar
-                    Text(
-                        text = run { tik; sureMetni(item.createdAt) },
-                        fontFamily = SpaceGrotesk, fontSize = 13.sp,
-                        color = Color(0xFF8E8E93),
-                        modifier = Modifier.padding(start = 16.dp, top = 2.dp)
-                    )
                 }
             }
         }
@@ -340,6 +370,37 @@ fun DayPage(
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E8E93))
                 ) {
                     Text("İptal")
+                }
+            }
+        )
+    }
+    if (resetItem != null) {
+        AlertDialog(
+            onDismissRequest = { resetItem = null },
+            title = { Text("Sayacı sıfırla", fontFamily = SpaceGrotesk) },
+            text = {
+                Text(
+                    "\"${resetItem!!.text}\" sayacı sıfırlanacak. Emin misin?",
+                    fontFamily = SpaceGrotesk
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onReset(resetItem!!)
+                        resetItem = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                ) {
+                    Text("Sıfırla", fontFamily = SpaceGrotesk)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { resetItem = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E8E93))
+                ) {
+                    Text("Vazgeç", fontFamily = SpaceGrotesk)
                 }
             }
         )
