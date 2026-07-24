@@ -65,6 +65,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.Font
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.Info
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,8 +85,8 @@ class MainActivity : ComponentActivity() {
                             contentColor = Color.White
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Settings,
-                                contentDescription = "Ayarlar"
+                                imageVector = Icons.Default.Info,
+                                contentDescription = "Hakkımızda"
                             )
                         }
                     }
@@ -467,17 +469,32 @@ fun AyarlarPenceresi(onDismiss: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Ayarlar",
-                    fontFamily = SpaceGrotesk, fontSize = 20.sp,
+                    text = "Hakkımızda",
+                    fontFamily = SpaceGrotesk,
+                    fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2C2C2E)
                 )
-                Spacer(modifier = Modifier.height(24.dp))
-                AyarButonu("Üyelik") { }
-                Spacer(modifier = Modifier.height(12.dp))
-                AyarButonu("Talep / Şikayet") { }
-                Spacer(modifier = Modifier.height(12.dp))
-                AyarButonu("Hakkımızda") { }
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Bu uygulama öğrenme amaçlı tasarlanmıştır. " +
+                            "İstek ve şikayetleriniz için bizimle " +
+                            "info@fabrite.ch adresinden iletişime geçebilirsiniz. " +
+                            "Teşekkürler.",
+                    fontFamily = SpaceGrotesk,
+                    fontSize = 15.sp,
+                    lineHeight = 22.sp,
+                    color = Color(0xFF2C2C2E),
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(20.dp))
+                Button(
+                    onClick = onDismiss,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                ) {
+                    Text("Kapat", fontFamily = SpaceGrotesk)
+                }
             }
         }
     }
