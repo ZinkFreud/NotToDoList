@@ -52,6 +52,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,12 +66,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             NotToDoListTheme {
+                var ayarlarAcik by remember { mutableStateOf(false) }
+
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     floatingActionButton = {
                         FloatingActionButton(
-                            onClick = { /* ayarlar sonra */ },
-                            containerColor = Color(0xFF8A6D3B),
+                            onClick = { ayarlarAcik = true },
+                            containerColor = Color(0xFF1C1C1E),
                             contentColor = Color.White
                         ) {
                             Icon(
@@ -74,14 +83,20 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 ) { innerPadding ->
-                    MainScreen(modifier = Modifier.padding(innerPadding))
+                    MainScreen(
+                        modifier = Modifier
+                            .padding(innerPadding)
+                            .blur(if (ayarlarAcik) 10.dp else 0.dp)
+                    )
                 }
 
+                if (ayarlarAcik) {
+                    AyarlarPenceresi(onDismiss = { ayarlarAcik = false })
+                }
             }
         }
     }
 }
-
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
     val days = listOf(
@@ -116,27 +131,27 @@ fun MainScreen(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxHeight()
                 .width(140.dp)
-                .background(Color(0xFFF2E8D5))
+                .background(Color(0xFF1C1C1E))
         ) {
             for (day in days) {
                 val isSelected = (day == selectedDay)
                 Box(
-                    contentAlignment = Alignment.CenterStart,
+                    contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                         .clickable { selectedDay = day }
-                        .background(if (isSelected) Color(0xFFE8D5B0) else Color.Transparent)
-                        .padding(horizontal = 16.dp)
+                        .background(if (isSelected) Color(0xFFFAFAFA) else Color.Transparent)
                 ) {
                     Text(
-                        text = day,
-                        fontSize = 18.sp,
+                        text = kisaGun(day),
+                        fontSize = 24.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color(0xFF3E2C10) else Color(0xFF8A7A5C)
+                        color = if (isSelected) Color(0xFF1C1C1E) else Color(0xFF8E8E93)
                     )
+
                 }
-                HorizontalDivider(color = Color(0xFFD9C7A8))
+                HorizontalDivider(color = Color(0xFF2C2C2E))
             }
         }
 
@@ -169,7 +184,21 @@ fun MainScreen(modifier: Modifier = Modifier) {
             },
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFFDFBF5))
+                .background(Color(0xFFFAFAFA))
+                .drawBehind {
+                    val adim = 24.dp.toPx()
+                    val cizgiRengi = Color(0xFFEDEDED)
+                    var x = 0f
+                    while (x < size.width) {
+                        drawLine(cizgiRengi, Offset(x, 0f), Offset(x, size.height), 1f)
+                        x += adim
+                    }
+                    var y = 0f
+                    while (y < size.height) {
+                        drawLine(cizgiRengi, Offset(0f, y), Offset(size.width, y), 1f)
+                        y += adim
+                    }
+                }
                 .padding(24.dp)
         )
     }
@@ -195,7 +224,7 @@ fun DayPage(
             text = day,
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF3E2C10)
+            color = Color(0xFF1C1C1E)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -216,7 +245,7 @@ fun DayPage(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8A6D3B)
+                    containerColor = Color(0xFF1C1C1E)
                 )
             ) {
                 Text("+", fontSize = 24.sp)
@@ -236,7 +265,7 @@ fun DayPage(
                         Text(
                             text = "• ${item.text}",
                             fontSize = 18.sp,
-                            color = Color(0xFF3E2C10),
+                            color = Color(0xFF1C1C1E),
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = {
@@ -246,14 +275,14 @@ fun DayPage(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Düzenle",
-                                tint = Color(0xFF8A6D3B)
+                                tint = Color(0xFF1C1C1E)
                             )
                         }
                         IconButton(onClick = { onDelete(item) }) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = "Sil",
-                                tint = Color(0xFFB0846A)
+                                tint = Color(0xFF8E8E93)
                             )
                         }
                     }
@@ -261,7 +290,7 @@ fun DayPage(
                     Text(
                         text = run { tik; sureMetni(item.createdAt) },
                         fontSize = 13.sp,
-                        color = Color(0xFF8A7A5C),
+                        color = Color(0xFF8E8E93),
                         modifier = Modifier.padding(start = 16.dp, top = 2.dp)
                     )
                 }
@@ -286,7 +315,7 @@ fun DayPage(
                         }
                         editingItem = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8A6D3B))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C1C1E))
                 ) {
                     Text("Kaydet")
                 }
@@ -294,7 +323,7 @@ fun DayPage(
             dismissButton = {
                 Button(
                     onClick = { editingItem = null },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFB0846A))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E8E93))
                 ) {
                     Text("İptal")
                 }
@@ -332,5 +361,63 @@ fun bugununGunu(): String {
         java.util.Calendar.SATURDAY -> "Cumartesi"
         java.util.Calendar.SUNDAY -> "Pazar"
         else -> "Pazartesi"
+    }
+}
+
+fun kisaGun(day: String): String {
+    return when (day) {
+        "Pazartesi" -> "PZT"
+        "Salı" -> "SAL"
+        "Çarşamba" -> "ÇRŞ"
+        "Perşembe" -> "PRŞ"
+        "Cuma" -> "CUM"
+        "Cumartesi" -> "CMT"
+        "Pazar" -> "PZR"
+        else -> day
+    }
+}
+@Composable
+fun AyarlarPenceresi(onDismiss: () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = Color(0xFFFAFAFA),
+            modifier = Modifier.fillMaxWidth(0.85f)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Ayarlar",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1C1C1E)
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                AyarButonu("Üyelik") { }
+                Spacer(modifier = Modifier.height(12.dp))
+                AyarButonu("Talep / Şikayet") { }
+                Spacer(modifier = Modifier.height(12.dp))
+                AyarButonu("Hakkımızda") { }
+            }
+        }
+    }
+}
+
+@Composable
+fun AyarButonu(metin: String, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C1C1E))
+    ) {
+        Text(text = metin, fontSize = 16.sp)
     }
 }
