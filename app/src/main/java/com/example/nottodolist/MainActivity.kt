@@ -59,6 +59,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.Font
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -73,7 +77,7 @@ class MainActivity : ComponentActivity() {
                     floatingActionButton = {
                         FloatingActionButton(
                             onClick = { ayarlarAcik = true },
-                            containerColor = Color(0xFF1C1C1E),
+                            containerColor = Color(0xFF2C2C2E),
                             contentColor = Color.White
                         ) {
                             Icon(
@@ -131,7 +135,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxHeight()
                 .width(140.dp)
-                .background(Color(0xFF1C1C1E))
+                .background(Color(0xFF2C2C2E))
         ) {
             for (day in days) {
                 val isSelected = (day == selectedDay)
@@ -145,13 +149,13 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 ) {
                     Text(
                         text = kisaGun(day),
-                        fontSize = 24.sp,
+                        fontFamily = SpaceGrotesk, fontSize = 24.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color(0xFF1C1C1E) else Color(0xFF8E8E93)
+                        color = if (isSelected) Color(0xFF2C2C2E) else Color(0xFF8E8E93)
                     )
 
                 }
-                HorizontalDivider(color = Color(0xFF2C2C2E))
+                HorizontalDivider(color = Color(0xFF48484A))
             }
         }
 
@@ -217,14 +221,19 @@ fun DayPage(
     var newItem by remember { mutableStateOf("") }
     var editingItem by remember { mutableStateOf<NotToDoItem?>(null) }
     var editingText by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+    LaunchedEffect(day) {
+        newItem = ""
+        focusManager.clearFocus()
+    }
 
     Column(modifier = modifier) {
         Spacer(modifier = Modifier.height(24.dp))
         Text(
             text = day,
-            fontSize = 28.sp,
+            fontFamily = SpaceGrotesk, fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1C1C1E)
+            color = Color(0xFF2C2C2E)
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -234,7 +243,12 @@ fun DayPage(
                 value = newItem,
                 onValueChange = { newItem = it },
                 modifier = Modifier.weight(1f),
-                placeholder = { Text("Ekle") }
+                placeholder = { Text("Ekle") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFF2C2C2E),
+                    unfocusedBorderColor = Color(0xFF8E8E93),
+                    cursorColor = Color(0xFF2C2C2E)
+                )
             )
             Spacer(modifier = Modifier.width(8.dp))
             Button(
@@ -245,10 +259,10 @@ fun DayPage(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF1C1C1E)
+                    containerColor = Color(0xFF2C2C2E)
                 )
             ) {
-                Text("+", fontSize = 24.sp)
+                Text("+", fontFamily = SpaceGrotesk, fontSize = 24.sp)
             }
         }
 
@@ -264,8 +278,8 @@ fun DayPage(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "• ${item.text}",
-                            fontSize = 18.sp,
-                            color = Color(0xFF1C1C1E),
+                            fontFamily = SpaceGrotesk, fontSize = 18.sp,
+                            color = Color(0xFF2C2C2E),
                             modifier = Modifier.weight(1f)
                         )
                         IconButton(onClick = {
@@ -275,7 +289,7 @@ fun DayPage(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Düzenle",
-                                tint = Color(0xFF1C1C1E)
+                                tint = Color(0xFF2C2C2E)
                             )
                         }
                         IconButton(onClick = { onDelete(item) }) {
@@ -289,7 +303,7 @@ fun DayPage(
                     // Alt satır: sayaç, tam genişlikte, ikonların altından uzar
                     Text(
                         text = run { tik; sureMetni(item.createdAt) },
-                        fontSize = 13.sp,
+                        fontFamily = SpaceGrotesk, fontSize = 13.sp,
                         color = Color(0xFF8E8E93),
                         modifier = Modifier.padding(start = 16.dp, top = 2.dp)
                     )
@@ -315,7 +329,7 @@ fun DayPage(
                         }
                         editingItem = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C1C1E))
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
                 ) {
                     Text("Kaydet")
                 }
@@ -393,9 +407,9 @@ fun AyarlarPenceresi(onDismiss: () -> Unit) {
             ) {
                 Text(
                     text = "Ayarlar",
-                    fontSize = 20.sp,
+                    fontFamily = SpaceGrotesk, fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1C1C1E)
+                    color = Color(0xFF2C2C2E)
                 )
                 Spacer(modifier = Modifier.height(24.dp))
                 AyarButonu("Üyelik") { }
@@ -416,8 +430,13 @@ fun AyarButonu(metin: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .height(52.dp),
         shape = RoundedCornerShape(12.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1C1C1E))
+        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
     ) {
-        Text(text = metin, fontSize = 16.sp)
+        Text(text = metin, fontFamily = SpaceGrotesk, fontSize = 16.sp)
     }
 }
+val SpaceGrotesk = FontFamily(
+    Font(R.font.space_grotesk_regular, FontWeight.Normal),
+    Font(R.font.space_grotesk_medium, FontWeight.Medium),
+    Font(R.font.space_grotesk_bold, FontWeight.Bold)
+)
