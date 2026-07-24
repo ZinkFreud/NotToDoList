@@ -67,6 +67,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.layout.offset
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -107,9 +109,11 @@ class MainActivity : ComponentActivity() {
 }
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
-    val days = listOf(
+    val temelGunler = listOf(
         "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"
     )
+    val baslangic = temelGunler.indexOf(bugununGunu())
+    val days = temelGunler.drop(baslangic) + temelGunler.take(baslangic)
 
     var selectedDay by remember { mutableStateOf(bugununGunu()) }
     // Her saniye artan bir "tik" sayacı - ekranı canlı tutar
@@ -151,11 +155,14 @@ fun MainScreen(modifier: Modifier = Modifier) {
                         .clickable { selectedDay = day }
                         .background(if (isSelected) Color(0xFFFAFAFA) else Color.Transparent)
                 ) {
+                    val kayma by animateDpAsState(if (isSelected) 10.dp else 0.dp)
                     Text(
                         text = kisaGun(day),
-                        fontFamily = SpaceGrotesk, fontSize = 24.sp,
+                        fontFamily = SpaceGrotesk,
+                        fontSize = 24.sp,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                        color = if (isSelected) Color(0xFF2C2C2E) else Color(0xFF8E8E93)
+                        color = if (isSelected) Color(0xFF2C2C2E) else Color(0xFF8E8E93),
+                        modifier = Modifier.offset(x = kayma)
                     )
 
                 }
