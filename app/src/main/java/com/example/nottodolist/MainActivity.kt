@@ -305,6 +305,7 @@ fun DayPage(
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
     var resetItem by remember { mutableStateOf<NotToDoItem?>(null) }
+    var deleteItem by remember { mutableStateOf<NotToDoItem?>(null) }
     val focusManager = LocalFocusManager.current
     LaunchedEffect(day) {
         newItem = ""
@@ -379,7 +380,7 @@ fun DayPage(
                             }) {
                                 Icon(Icons.Default.Edit, "Düzenle", tint = Color(0xFF2C2C2E))
                             }
-                            IconButton(onClick = { onDelete(item) }) {
+                            IconButton(onClick = { deleteItem = item }) {
                                 Icon(Icons.Default.Delete, "Sil", tint = Color(0xFF2C2C2E))
                             }
                         }
@@ -554,6 +555,37 @@ fun DayPage(
             dismissButton = {
                 Button(
                     onClick = { resetItem = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E8E93))
+                ) {
+                    Text("Vazgeç", fontFamily = SpaceGrotesk)
+                }
+            }
+        )
+    }
+    if (deleteItem != null) {
+        AlertDialog(
+            onDismissRequest = { deleteItem = null },
+            title = { Text("Sil", fontFamily = SpaceGrotesk) },
+            text = {
+                Text(
+                    "\"${deleteItem!!.text}\" silinecek. Emin misin?",
+                    fontFamily = SpaceGrotesk
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete(deleteItem!!)
+                        deleteItem = null
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                ) {
+                    Text("Sil", fontFamily = SpaceGrotesk)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = { deleteItem = null },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E8E93))
                 ) {
                     Text("Vazgeç", fontFamily = SpaceGrotesk)
