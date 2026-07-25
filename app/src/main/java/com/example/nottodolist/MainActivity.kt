@@ -69,6 +69,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.ui.text.style.TextDecoration
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -77,19 +81,33 @@ class MainActivity : ComponentActivity() {
         setContent {
             NotToDoListTheme {
                 var ayarlarAcik by remember { mutableStateOf(false) }
+                var gecmisAcik by remember { mutableStateOf(false) }
 
                 Scaffold(
                     modifier = Modifier.fillMaxSize(),
                     floatingActionButton = {
-                        FloatingActionButton(
-                            onClick = { ayarlarAcik = true },
-                            containerColor = Color(0xFF2C2C2E),
-                            contentColor = Color.White
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Info,
-                                contentDescription = "Hakkımızda"
-                            )
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            FloatingActionButton(
+                                onClick = { gecmisAcik = true },
+                                containerColor = Color(0xFF2C2C2E),
+                                contentColor = Color.White
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = "Geçmiş"
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            FloatingActionButton(
+                                onClick = { ayarlarAcik = true },
+                                containerColor = Color(0xFF2C2C2E),
+                                contentColor = Color.White
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Hakkımızda"
+                                )
+                            }
                         }
                     }
                 ) { innerPadding ->
@@ -102,6 +120,9 @@ class MainActivity : ComponentActivity() {
 
                 if (ayarlarAcik) {
                     AyarlarPenceresi(onDismiss = { ayarlarAcik = false })
+                }
+                if (gecmisAcik) {
+                    GecmisPenceresi(onDismiss = { gecmisAcik = false })
                 }
             }
         }
@@ -198,11 +219,28 @@ fun MainScreen(modifier: Modifier = Modifier) {
                 }
             },
             onReset = { item ->
-                val index = items.indexOf(item)
-                if (index != -1) {
-                    items[index] = item.copy(createdAt = System.currentTimeMillis())
-                    scope.launch {
+                val bugun = bugununGunu()
+                val dayanma = System.currentTimeMillis() - item.createdAt
+                val gecmisKaydi = item.copy(dayandiMs = dayanma)
+                val yeniHal = item.copy(createdAt = System.currentTimeMillis(), dayandiMs = 0L)
+
+                scope.launch {
+                    // 1) Geçmişe kopya at
+                    DataStoreManager.addToHistory(context, gecmisKaydi)
+
+                    if (selectedDay == bugun) {
+                        // Zaten bugündeyiz: sil ve en üste taşı
+                        items.remove(item)
+                        items.add(0, yeniHal)
                         DataStoreManager.saveItems(context, selectedDay, items.toList())
+                    } else {
+                        // Başka gündeyiz: bu günden sil, bugüne ekle
+                        items.remove(item)
+                        DataStoreManager.saveItems(context, selectedDay, items.toList())
+
+                        val bugunkuler = DataStoreManager.getItems(context, bugun).first().toMutableList()
+                        bugunkuler.add(0, yeniHal)
+                        DataStoreManager.saveItems(context, bugun, bugunkuler)
                     }
                 }
             },
@@ -525,3 +563,121 @@ val SpaceGrotesk = FontFamily(
     Font(R.font.space_grotesk_medium, FontWeight.Medium),
     Font(R.font.space_grotesk_bold, FontWeight.Bold)
 )
+
+fun dayanmaMetni(ms: Long): String {
+    val saniye = ms / 1000
+    val gun = saniye / 86400
+    val saat = (saniye % 86400) / 3600
+    val dakika = (saniye % 3600) / 60
+    val sn = saniye % 60
+
+    val parcalar = mutableListOf<String>()
+    if (gun > 0) parcalar.add("$gun gün")
+    if (saat > 0) parcalar.add("$saat saat")
+    if (dakika > 0) parcalar.add("$dakika dk")
+    parcalar.add("$sn sn")
+
+    return parcalar.joinToString(" ") + " dayandı"
+}
+
+@Composable
+fun GecmisPenceresi(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val kayitlar = remember { mutableStateListOf<NotToDoItem>() }
+
+    LaunchedEffect(Unit) {
+        val gecmis = DataStoreManager.getHistory(context).first()
+        kayitlar.clear()
+        kayitlar.addAll(gecmis.reversed())
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Surface(
+            shape = RoundedCornerShape(20.dp),
+            color = Color(0xFFFAFAFA),
+            modifier = Modifier
+                .fillMaxWidth(0.9f)
+                .fillMaxHeight(0.75f)
+        ) {
+            Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Geçmiş",
+                        fontFamily = SpaceGrotesk,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF2C2C2E),
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(onClick = onDismiss) {
+                        Icon(Icons.Default.Close, "Kapat", tint = Color(0xFF2C2C2E))
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                if (kayitlar.isEmpty()) {
+                    Text(
+                        text = "Henüz bozulan bir şey yok.",
+                        fontFamily = SpaceGrotesk,
+                        fontSize = 15.sp,
+                        color = Color(0xFF8E8E93)
+                    )
+                } else {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        for (kayit in kayitlar) {
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = Color.White,
+                                border = BorderStroke(1.dp, Color(0xFFE5E5EA)),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 5.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(14.dp)
+                                ) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Text(
+                                            text = kayit.text,
+                                            fontFamily = SpaceGrotesk,
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Medium,
+                                            color = Color(0xFF8E8E93),
+                                            textDecoration = TextDecoration.LineThrough
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = dayanmaMetni(kayit.dayandiMs),
+                                            fontFamily = SpaceGrotesk,
+                                            fontSize = 13.sp,
+                                            color = Color(0xFF2C2C2E)
+                                        )
+                                    }
+                                    IconButton(onClick = {
+                                        val idx = kayitlar.indexOf(kayit)
+                                        val gercekIndex = kayitlar.size - 1 - idx
+                                        kayitlar.remove(kayit)
+                                        scope.launch {
+                                            DataStoreManager.removeFromHistory(context, gercekIndex)
+                                        }
+                                    }) {
+                                        Icon(Icons.Default.Delete, "Sil", tint = Color(0xFF8E8E93))
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

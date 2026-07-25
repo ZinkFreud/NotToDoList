@@ -14,7 +14,8 @@ val Context.dataStore by preferencesDataStore(name = "nottodo_data")
 // Bir maddeyi temsil eden yapı: metni + eklendiği zaman (milisaniye)
 data class NotToDoItem(
     val text: String,
-    val createdAt: Long
+    val createdAt: Long,
+    val dayandiMs: Long = 0L
 )
 
 object DataStoreManager {
@@ -29,6 +30,7 @@ object DataStoreManager {
             val obj = JSONObject()
             obj.put("text", item.text)
             obj.put("createdAt", item.createdAt)
+            obj.put("dayandiMs", item.dayandiMs)
             jsonArray.put(obj)
         }
         context.dataStore.edit { prefs ->
@@ -47,11 +49,60 @@ object DataStoreManager {
                 result.add(
                     NotToDoItem(
                         text = obj.getString("text"),
-                        createdAt = obj.getLong("createdAt")
+                        createdAt = obj.getLong("createdAt"),
+                                dayandiMs = obj.optLong("dayandiMs", 0L)
                     )
                 )
             }
             result
+        }
+    }
+    // GEÇMİŞ (bozulan maddeler) için ayrı anahtar
+    private val gecmisKey = stringPreferencesKey("gecmis")
+
+    // Geçmişe bir kayıt EKLE
+    suspend fun addToHistory(context: Context, item: NotToDoItem) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[gecmisKey] ?: "[]"
+            val jsonArray = JSONArray(raw)
+            val obj = JSONObject()
+            obj.put("text", item.text)
+            obj.put("createdAt", item.createdAt)
+            obj.put("dayandiMs", item.dayandiMs)
+            jsonArray.put(obj)
+            prefs[gecmisKey] = jsonArray.toString()
+        }
+    }
+
+    // Geçmişi OKU
+    fun getHistory(context: Context): Flow<List<NotToDoItem>> {
+        return context.dataStore.data.map { prefs ->
+            val raw = prefs[gecmisKey] ?: "[]"
+            val jsonArray = JSONArray(raw)
+            val result = mutableListOf<NotToDoItem>()
+            for (i in 0 until jsonArray.length()) {
+                val obj = jsonArray.getJSONObject(i)
+                result.add(
+                    NotToDoItem(
+                        text = obj.getString("text"),
+                        createdAt = obj.getLong("createdAt"),
+                        dayandiMs = obj.optLong("dayandiMs", 0L)
+                    )
+                )
+            }
+            result
+        }
+    }
+
+    // Geçmişten bir kaydı SİL (indexe göre)
+    suspend fun removeFromHistory(context: Context, index: Int) {
+        context.dataStore.edit { prefs ->
+            val raw = prefs[gecmisKey] ?: "[]"
+            val jsonArray = JSONArray(raw)
+            if (index in 0 until jsonArray.length()) {
+                jsonArray.remove(index)
+                prefs[gecmisKey] = jsonArray.toString()
+            }
         }
     }
 }
