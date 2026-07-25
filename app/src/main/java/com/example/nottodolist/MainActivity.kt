@@ -73,6 +73,12 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
+import androidx.compose.material3.ExperimentalMaterial3Api
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -128,6 +134,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(modifier: Modifier = Modifier) {
     val temelGunler = listOf(
@@ -209,12 +216,26 @@ fun MainScreen(modifier: Modifier = Modifier) {
                     DataStoreManager.saveItems(context, selectedDay, items.toList())
                 }
             },
-            onEdit = { item, yeniMetin ->
-                val index = items.indexOf(item)
-                if (index != -1) {
-                    items[index] = item.copy(text = yeniMetin)
-                    scope.launch {
+            onEdit = { item, yeniMetin, yeniZaman ->
+                val hedefGun = gununAdi(yeniZaman)
+                val yeniHal = item.copy(text = yeniMetin, createdAt = yeniZaman)
+
+                scope.launch {
+                    if (hedefGun == selectedDay) {
+                        // Aynı günde kalıyor: yerinde güncelle
+                        val index = items.indexOf(item)
+                        if (index != -1) {
+                            items[index] = yeniHal
+                            DataStoreManager.saveItems(context, selectedDay, items.toList())
+                        }
+                    } else {
+                        // Başka güne taşınıyor: bu günden sil, hedef güne ekle
+                        items.remove(item)
                         DataStoreManager.saveItems(context, selectedDay, items.toList())
+
+                        val hedeftekiler = DataStoreManager.getItems(context, hedefGun).first().toMutableList()
+                        hedeftekiler.add(0, yeniHal)
+                        DataStoreManager.saveItems(context, hedefGun, hedeftekiler)
                     }
                 }
             },
@@ -265,7 +286,7 @@ fun MainScreen(modifier: Modifier = Modifier) {
         )
     }
 }
-
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DayPage(
     day: String,
@@ -273,13 +294,16 @@ fun DayPage(
     items: SnapshotStateList<NotToDoItem>,
     onAdd: (String) -> Unit,
     onDelete: (NotToDoItem) -> Unit,
-    onEdit: (NotToDoItem, String) -> Unit,
+    onEdit: (NotToDoItem, String, Long) -> Unit,
     onReset: (NotToDoItem) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var newItem by remember { mutableStateOf("") }
     var editingItem by remember { mutableStateOf<NotToDoItem?>(null) }
     var editingText by remember { mutableStateOf("") }
+    var editingTime by remember { mutableStateOf(0L) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    var showTimePicker by remember { mutableStateOf(false) }
     var resetItem by remember { mutableStateOf<NotToDoItem?>(null) }
     val focusManager = LocalFocusManager.current
     LaunchedEffect(day) {
@@ -338,7 +362,7 @@ fun DayPage(
                         .fillMaxWidth()
                         .padding(vertical = 6.dp)
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(12.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
                                 text = item.text,
@@ -351,6 +375,7 @@ fun DayPage(
                             IconButton(onClick = {
                                 editingItem = item
                                 editingText = item.text
+                                editingTime = item.createdAt
                             }) {
                                 Icon(Icons.Default.Edit, "Düzenle", tint = Color(0xFF2C2C2E))
                             }
@@ -359,7 +384,7 @@ fun DayPage(
                             }
                         }
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
                             text = run { tik; sureMetni(item.createdAt) },
@@ -369,7 +394,7 @@ fun DayPage(
                             color = Color(0xFF2C2C2E)
                         )
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(8.dp))
 
                         OutlinedButton(
                             onClick = { resetItem = item },
@@ -391,24 +416,51 @@ fun DayPage(
     if (editingItem != null) {
         AlertDialog(
             onDismissRequest = { editingItem = null },
-            title = { Text("Düzenle") },
+            title = { Text("Düzenle", fontFamily = SpaceGrotesk) },
             text = {
-                OutlinedTextField(
-                    value = editingText,
-                    onValueChange = { editingText = it }
-                )
+                Column {
+                    OutlinedTextField(
+                        value = editingText,
+                        onValueChange = { editingText = it },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF2C2C2E),
+                            unfocusedBorderColor = Color(0xFF8E8E93),
+                            cursorColor = Color(0xFF2C2C2E)
+                        )
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Başlangıç:",
+                        fontFamily = SpaceGrotesk,
+                        fontSize = 13.sp,
+                        color = Color(0xFF8E8E93)
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedButton(
+                        onClick = { showDatePicker = true },
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Color(0xFFE5E5EA))
+                    ) {
+                        Text(
+                            text = tarihMetni(editingTime),
+                            fontFamily = SpaceGrotesk,
+                            fontSize = 14.sp,
+                            color = Color(0xFF2C2C2E)
+                        )
+                    }
+                }
             },
             confirmButton = {
                 Button(
                     onClick = {
                         if (editingText.isNotBlank()) {
-                            onEdit(editingItem!!, editingText.trim())
+                            onEdit(editingItem!!, editingText.trim(), editingTime)
                         }
                         editingItem = null
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
                 ) {
-                    Text("Kaydet")
+                    Text("Kaydet", fontFamily = SpaceGrotesk)
                 }
             },
             dismissButton = {
@@ -416,7 +468,64 @@ fun DayPage(
                     onClick = { editingItem = null },
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF8E8E93))
                 ) {
-                    Text("İptal")
+                    Text("İptal", fontFamily = SpaceGrotesk)
+                }
+            }
+        )
+    }
+    if (showDatePicker) {
+        val dateState = rememberDatePickerState(initialSelectedDateMillis = editingTime)
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val secilenGun = dateState.selectedDateMillis ?: editingTime
+                        // Seçilen günün tarihini al, saati koru
+                        val eski = java.util.Calendar.getInstance().apply { timeInMillis = editingTime }
+                        val yeni = java.util.Calendar.getInstance().apply { timeInMillis = secilenGun }
+                        yeni.set(java.util.Calendar.HOUR_OF_DAY, eski.get(java.util.Calendar.HOUR_OF_DAY))
+                        yeni.set(java.util.Calendar.MINUTE, eski.get(java.util.Calendar.MINUTE))
+                        editingTime = yeni.timeInMillis
+                        showDatePicker = false
+                        showTimePicker = true
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                ) {
+                    Text("İleri", fontFamily = SpaceGrotesk)
+                }
+            }
+        ) {
+            DatePicker(state = dateState)
+        }
+    }
+
+    if (showTimePicker) {
+        val cal = java.util.Calendar.getInstance().apply { timeInMillis = editingTime }
+        val timeState = rememberTimePickerState(
+            initialHour = cal.get(java.util.Calendar.HOUR_OF_DAY),
+            initialMinute = cal.get(java.util.Calendar.MINUTE),
+            is24Hour = true
+        )
+        AlertDialog(
+            onDismissRequest = { showTimePicker = false },
+            title = { Text("Saat seç", fontFamily = SpaceGrotesk) },
+            text = { TimePicker(state = timeState) },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val yeni = java.util.Calendar.getInstance().apply {
+                            timeInMillis = editingTime
+                            set(java.util.Calendar.HOUR_OF_DAY, timeState.hour)
+                            set(java.util.Calendar.MINUTE, timeState.minute)
+                        }
+                        // Gelecek zaman seçilmişse şimdiye çek
+                        editingTime = minOf(yeni.timeInMillis, System.currentTimeMillis())
+                        showTimePicker = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                ) {
+                    Text("Tamam", fontFamily = SpaceGrotesk)
                 }
             }
         )
@@ -516,7 +625,7 @@ fun AyarlarPenceresi(onDismiss: () -> Unit) {
                 Text(
                     text = "Hakkımızda",
                     fontFamily = SpaceGrotesk,
-                    fontSize = 20.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF2C2C2E)
                 )
@@ -679,5 +788,24 @@ fun GecmisPenceresi(onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+fun tarihMetni(ms: Long): String {
+    val format = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm", java.util.Locale("tr"))
+    return format.format(java.util.Date(ms))
+}
+
+fun gununAdi(ms: Long): String {
+    val takvim = java.util.Calendar.getInstance().apply { timeInMillis = ms }
+    return when (takvim.get(java.util.Calendar.DAY_OF_WEEK)) {
+        java.util.Calendar.MONDAY -> "Pazartesi"
+        java.util.Calendar.TUESDAY -> "Salı"
+        java.util.Calendar.WEDNESDAY -> "Çarşamba"
+        java.util.Calendar.THURSDAY -> "Perşembe"
+        java.util.Calendar.FRIDAY -> "Cuma"
+        java.util.Calendar.SATURDAY -> "Cumartesi"
+        java.util.Calendar.SUNDAY -> "Pazar"
+        else -> "Pazartesi"
     }
 }
