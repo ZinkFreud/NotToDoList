@@ -1,6 +1,7 @@
 package com.example.nottodolist
 import android.content.Context
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -92,6 +93,17 @@ object DataStoreManager {
             }
             result
         }
+    }
+
+    // GÜNLÜK HATIRLATMA açık mı
+    private val hatirlatmaKey = booleanPreferencesKey("hatirlatma_acik")
+
+    fun hatirlatmaAcik(context: Context): Flow<Boolean> {
+        return context.dataStore.data.map { prefs -> prefs[hatirlatmaKey] ?: false }
+    }
+
+    suspend fun hatirlatmaAyarla(context: Context, acik: Boolean) {
+        context.dataStore.edit { prefs -> prefs[hatirlatmaKey] = acik }
     }
 
     // Geçmişten bir kaydı SİL (indexe göre)

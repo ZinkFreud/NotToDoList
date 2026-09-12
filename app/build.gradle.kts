@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
 }
- 
+
 android {
     namespace = "com.example.nottodolist"
     compileSdk {
@@ -10,17 +10,17 @@ android {
             minorApiLevel = 1
         }
     }
- 
+
     defaultConfig {
         applicationId = "com.necart.nottodolist"
         minSdk = 24
         targetSdk = 36
         versionCode = 2
         versionName = "1.1"
- 
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
- 
+
     /* Imzalama. GitHub Actions derlerken bu dort ortam degiskenini veriyor;
        yoksa (senin bilgisayarinda) hic kurulmuyor ve eski duzen bozulmuyor. */
     signingConfigs {
@@ -34,7 +34,7 @@ android {
             }
         }
     }
- 
+
     buildTypes {
         release {
             if (System.getenv("KEYSTORE_FILE") != null) {
@@ -53,10 +53,11 @@ android {
         compose = true
     }
 }
- 
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation("androidx.work:work-runtime-ktx:2.10.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.6")
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)

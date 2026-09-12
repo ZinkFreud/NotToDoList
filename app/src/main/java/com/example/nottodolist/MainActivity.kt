@@ -79,6 +79,11 @@ import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -674,6 +679,15 @@ fun AyarlarPenceresi(onDismiss: () -> Unit) {
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(20.dp))
+                HorizontalDivider(color = Color(0xFFE0E0E0))
+                Spacer(modifier = Modifier.height(12.dp))
+
+                /* Gunluk hatirlatma. Uygulama dogasi geregi az aciliyor;
+                   aksam bir hatirlatma hem "hala dayaniyorsun" demek icin
+                   iyi bir sebep, hem de uygulamayi hatirlatiyor. */
+                HatirlatmaSatiri()
+
+                Spacer(modifier = Modifier.height(16.dp))
                 Button(
                     onClick = onDismiss,
                     shape = RoundedCornerShape(12.dp),
@@ -683,6 +697,69 @@ fun AyarlarPenceresi(onDismiss: () -> Unit) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun HatirlatmaSatiri() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var acik by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        acik = DataStoreManager.hatirlatmaAcik(context).first()
+    }
+
+    fun ac() {
+        acik = true
+        scope.launch { DataStoreManager.hatirlatmaAyarla(context, true) }
+        hatirlatmayiKur(context)
+    }
+
+    /* Izin penceresi. Android 13 oncesinde hic acilmiyor, cunku
+       bildirimIzniVar() orada zaten true donuyor. */
+    val izinIsteyici = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { verildi -> if (verildi) ac() }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Günlük hatırlatma",
+                fontFamily = SpaceGrotesk,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color(0xFF2C2C2E)
+            )
+            Text(
+                text = "Her akşam 20.00'de ne kadar dayandığını hatırlatır.",
+                fontFamily = SpaceGrotesk,
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = Color(0xFF8E8E93)
+            )
+        }
+        Spacer(modifier = Modifier.width(12.dp))
+        Switch(
+            checked = acik,
+            onCheckedChange = { istenen ->
+                if (istenen) {
+                    if (bildirimIzniVar(context)) ac()
+                    else izinIsteyici.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    acik = false
+                    scope.launch { DataStoreManager.hatirlatmaAyarla(context, false) }
+                    hatirlatmayiKaldir(context)
+                }
+            },
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = Color(0xFFFAFAFA),
+                checkedTrackColor = Color(0xFF2C2C2E)
+            )
+        )
     }
 }
 
