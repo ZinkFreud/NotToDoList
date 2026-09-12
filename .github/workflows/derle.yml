@@ -75,15 +75,23 @@ jobs:
         run: |
           # gradlew Windows'tan geldigi icin calistirma izni yok; veriyoruz.
           chmod +x ./gradlew
-          ./gradlew bundleRelease --no-daemon --no-configuration-cache --stacktrace
+          # .aab Play icin, .apk telefona kurup denemek icin.
+          ./gradlew bundleRelease assembleRelease --no-daemon --no-configuration-cache --stacktrace
  
       - name: Ureteni goster
         if: always()
-        run: find app/build/outputs -name "*.aab" -exec ls -lh {} \; || true
+        run: find app/build/outputs \( -name "*.aab" -o -name "*.apk" \) -exec ls -lh {} \; || true
  
       - name: AAB dosyasini yukle
         uses: actions/upload-artifact@v4
         with:
           name: nottodo-aab
           path: app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+ 
+      - name: APK dosyasini yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: nottodo-apk
+          path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
