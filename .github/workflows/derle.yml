@@ -1,6 +1,5 @@
 # NotToDo - imzali AAB uretir.
 # Elle calistirilir: Actions sekmesi -> "AAB derle" -> Run workflow.
-# Imza anahtari ve sifreler depo gizli degiskenlerinden (Secrets) gelir.
  
 name: AAB derle
  
@@ -32,21 +31,40 @@ jobs:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
         run: |
           if [ -z "$KEYSTORE_BASE64" ]; then
-            echo "KEYSTORE_BASE64 gizli degiskeni bos. Depo ayarlarindan ekle."
+            echo "HATA: KEYSTORE_BASE64 gizli degiskeni bos."
             exit 1
           fi
-          echo "$KEYSTORE_BASE64" | tr -d '\r\n' | base64 -d > "$RUNNER_TEMP/imza.jks"
+          echo "base64 metninin uzunlugu: ${#KEYSTORE_BASE64} karakter"
+          printf '%s' "$KEYSTORE_BASE64" | tr -d ' \r\n' | base64 -d > "$RUNNER_TEMP/imza.jks"
+          echo "cozulen dosyanin boyutu:"
           ls -l "$RUNNER_TEMP/imza.jks"
  
-      - name: Anahtarin parmak izi
+      # Bu adim bilerek isi DURDURMUYOR: amaci teshis.
+      # Parmak izi gizli bilgi degil, Play Console da ayni degeri gosteriyor.
+      - name: Anahtari incele
+        continue-on-error: true
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: |
-          # Parmak izi gizli bilgi degil; Play Console da ayni degeri gosteriyor.
-          # Buradaki SHA1 ile Play'deki "yukleme anahtari sertifikasi" ayni olmali.
-          keytool -list -v -keystore "$RUNNER_TEMP/imza.jks" \
-                  -storepass "$KEYSTORE_PASSWORD" \
-            | grep -E "Alias name|SHA1:|SHA256:"
+          set +e
+          echo "===== DOSYA ====="
+          ls -l "$RUNNER_TEMP/imza.jks"
+          file "$RUNNER_TEMP/imza.jks"
+          echo "===== KEYTOOL NEREDE ====="
+          echo "JAVA_HOME=$JAVA_HOME"
+          which keytool || echo "PATH'te keytool yok"
+          ls -l "$JAVA_HOME/bin/keytool" || echo "JAVA_HOME icinde de yok"
+          echo "===== SIFRE VERILDI MI ====="
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "KEYSTORE_PASSWORD BOS GELDI"
+          else
+            echo "KEYSTORE_PASSWORD dolu (${#KEYSTORE_PASSWORD} karakter)"
+          fi
+          echo "===== KEYTOOL CIKTISI ====="
+          "$JAVA_HOME/bin/keytool" -list -v \
+              -keystore "$RUNNER_TEMP/imza.jks" \
+              -storepass "$KEYSTORE_PASSWORD" 2>&1 | head -60
+          echo "===== keytool cikis kodu: ${PIPESTATUS[0]} ====="
  
       - name: Derle
         env:
@@ -57,8 +75,8 @@ jobs:
         run: ./gradlew bundleRelease --no-daemon --no-configuration-cache --stacktrace
  
       - name: Ureteni goster
-        run: |
-          find app/build/outputs -name "*.aab" -exec ls -lh {} \;
+        if: always()
+        run: find app/build/outputs -name "*.aab" -exec ls -lh {} \; || true
  
       - name: AAB dosyasini yukle
         uses: actions/upload-artifact@v4
