@@ -9,6 +9,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
@@ -18,9 +19,14 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
+    primary = Color(0xFF2C2C2E),
     secondary = PurpleGrey40,
-    tertiary = Pink40
+    tertiary = Pink40,
+    onPrimary = Color.White,
+    surface = Color.White,
+    onSurface = Color(0xFF2C2C2E),
+    background = Color(0xFFFAFAFA),
+    onBackground = Color(0xFF2C2C2E)
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -33,11 +39,20 @@ private val LightColorScheme = lightColorScheme(
     */
 )
 
+/* Uygulamanin TAMAMI acik zemine gore tasarlandi: kartlar beyaz,
+   yazilar #2C2C2E, butonlar koyu gri. Tema ise sistemi ve duvar
+   kagidini takip ediyordu. Iki sonucu vardi:
+     - Duvar kagidindan gelen renk yuzunden buton yazilari mavi
+       cikiyordu (varsayilan yazi rengi "onPrimary").
+     - Telefon koyu moddayken pencere zemini koyuluyor, uzerindeki
+       #2C2C2E yazi okunmaz hale geliyordu (baslangic tarihi).
+   Cozum: temayi ACIK semaya sabitliyoruz ve yazi renklerini
+   kendimiz veriyoruz. Tek tek butonlari yamamak yerine sebebi
+   ortadan kaldiriyor. */
 @Composable
 fun NotToDoListTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    darkTheme: Boolean = false,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {

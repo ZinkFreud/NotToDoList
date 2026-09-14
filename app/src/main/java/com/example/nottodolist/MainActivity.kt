@@ -349,10 +349,11 @@ fun DayPage(
                     }
                 },
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2C2C2E)
+                    containerColor = Color(0xFF2C2C2E),
+                    contentColor = Color.White
                 )
             ) {
-                Text("+", fontFamily = SpaceGrotesk, fontSize = 24.sp)
+                Text("+", fontFamily = SpaceGrotesk, fontSize = 24.sp, color = Color.White)
             }
         }
 
@@ -464,9 +465,12 @@ fun DayPage(
                         }
                         editingItem = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2C2C2E),
+                        contentColor = Color.White
+                    )
                 ) {
-                    Text("Kaydet", fontFamily = SpaceGrotesk)
+                    Text("Kaydet", fontFamily = SpaceGrotesk, color = Color.White)
                 }
             },
             dismissButton = {
@@ -552,9 +556,12 @@ fun DayPage(
                         onReset(resetItem!!)
                         resetItem = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2C2C2E),
+                        contentColor = Color.White
+                    )
                 ) {
-                    Text("Sıfırla", fontFamily = SpaceGrotesk)
+                    Text("Sıfırla", fontFamily = SpaceGrotesk, color = Color.White)
                 }
             },
             dismissButton = {
@@ -670,7 +677,7 @@ fun AyarlarPenceresi(onDismiss: () -> Unit) {
                 Text(
                     text = "Bu uygulama öğrenme amaçlı tasarlanmıştır. " +
                             "İstek ve şikayetleriniz için bizimle " +
-                            "info@fabrite.ch adresinden iletişime geçebilirsiniz. " +
+                            "cihanguzelsoy@gmail.com adresinden iletişime geçebilirsiniz. " +
                             "Teşekkürler.",
                     fontFamily = SpaceGrotesk,
                     fontSize = 15.sp,
@@ -691,9 +698,12 @@ fun AyarlarPenceresi(onDismiss: () -> Unit) {
                 Button(
                     onClick = onDismiss,
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2C2C2E))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2C2C2E),
+                        contentColor = Color.White
+                    )
                 ) {
-                    Text("Kapat", fontFamily = SpaceGrotesk)
+                    Text("Kapat", fontFamily = SpaceGrotesk, color = Color.White)
                 }
             }
         }
